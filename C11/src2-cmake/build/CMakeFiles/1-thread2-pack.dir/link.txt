@@ -1,0 +1,1 @@
+/usr/local/gcc-11.2/bin/g++-11.2  -O0 -Wall -g -rdynamic CMakeFiles/1-thread2-pack.dir/1-thread2-pack.cpp.o CMakeFiles/1-thread2-pack.dir/zero_thread.cpp.o -o 1-thread2-pack  -lpthread 

@@ -1,0 +1,1 @@
+/usr/local/gcc-11.2/bin/g++-11.2  -O0 -Wall -g -rdynamic CMakeFiles/2-2-bind.dir/2-2-bind.cpp.o -o 2-2-bind 

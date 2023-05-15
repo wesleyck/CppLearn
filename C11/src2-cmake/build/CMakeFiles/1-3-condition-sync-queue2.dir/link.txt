@@ -1,0 +1,1 @@
+/usr/local/gcc-11.2/bin/g++-11.2  -O0 -Wall -g -rdynamic CMakeFiles/1-3-condition-sync-queue2.dir/1-3-condition-sync-queue2.cpp.o -o 1-3-condition-sync-queue2  -lpthread 
