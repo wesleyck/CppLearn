@@ -141,7 +141,7 @@ public:
   std::shared_ptr<A1> GetSelf() {
     return shared_from_this(); // 解决下面double free问题
 
-      // 千万别这么干，因为this本身裸指针，会double free
+      // wrong，因为this本身裸指针，会double free
     // return std::shared_ptr<A1>(this); 
   }
   A1() {
@@ -152,7 +152,7 @@ public:
   }
 };
 
-int main() {
+int main5() {
     std::cout << "Hello main 5" << std::endl;
     std::cout << "============" << std::endl;
     
@@ -170,9 +170,57 @@ int main() {
     return 0;
 }
 
+
+// 6.unique_ptr move 用法 删除器需要指定类型
+struct MyDeleter {
+  void operator()(int *p) {
+    if (p) {
+      std::cout << "delete function " << std::endl;
+      delete p;
+    }
+  }
+};
+
 int main6() {
     std::cout << "Hello main 6" << std::endl;
     std::cout << "============" << std::endl;
+
+    // auto up1(std::make_unique<int[]>(2)); // c14引入 make
+    // std::unique_ptr<int> up2(new int);
+    // up1[21] = 1;
+    {
+    std::unique_ptr<int, MyDeleter> up30(new int(1), MyDeleter());
+    }
+    // std::cout << "up 1: " << up1[20] << std::endl;
+
+    std::unique_ptr<int> up1(new int);
+    if (!up1) {
+      std::cout << "unique_ptr 3 is null" << std::endl;
+    }
+    std::unique_ptr<int> up2 = std::move(up1);
+    if (!up1) {
+      std::cout << "unique_ptr 3 is null" << std::endl;
+    }
+    if (!up2) {
+      std::cout << "unique_ptr3 is null" << std::endl;
+    }
+    
+    // 不合法，unique可以数组初始化，而shared不行
+    // std::shared_ptr<int []> sp1(new int[10]);
+    std::unique_ptr<int []> up3(new int[10]);
+    up3[9] = 9;
+    // 编译不进行边界检查，直到运行才会报错（此时多分配的内存影响up5的分配，总之不要越界）
+    //  很危险
+    // up3[10] = 10; 
+    std::cout << "up3[10]: " << up3[9] << std::endl;
+
+    // auto up1(std::make_unique<int[]>(2));
+    // wrong，unique_ptr 构造函数默认删除器，如果提供必须要指定类型，shared_ptr不用
+    // std::unique_ptr<int> up4(new int(1), [](int *p){delete p;});
+    // std::cout << "up4:  " << *up4 << std::endl;
+
+    std::unique_ptr<int, void(*)(int*)> up5(new int(1), [](int *p){delete p;}); 
+    std::cout << "up5:  " << *up5 << std::endl;
 
     std::cout << "============" << std::endl;
     std::cout << "main end!" << std::endl;
@@ -181,3 +229,94 @@ int main6() {
 
 
 
+// 7.weak_ptr 用法和wrong 用例
+std::weak_ptr<int> global_wp1;
+void weak_f1() {
+  auto spt = global_wp1.lock(); // 先锁好资源再去使用
+  if (global_wp1.expired()) {
+    std::cout << "global wp Invalid, resource release" << std::endl;
+
+  } else {
+    std::cout << "global wp Valid, *spt = " << *spt << std::endl;
+  }
+}
+
+void weak_f2() {
+  std::cout << "lock resources" << std::endl;
+  auto spt = global_wp1.lock(); // 锁好资源再去判断，保证reset后还能用
+  std::this_thread::sleep_for(std::chrono::seconds(2));
+  if (global_wp1.expired()) {
+    std::cout << "global weak Invalid, resource released" << std::endl;
+  } else {
+    std::cout << "global weak Valid, *spt = " << *spt << std::endl;
+  }
+}
+
+void weak_f3() {
+  std::cout << "========weak 3 test=======" << std::endl;
+  std::weak_ptr<int> wp;
+  {
+    std::shared_ptr<int> sp(new int(1));
+    std::cout << "before wp sp.use_count() = " << sp.use_count() << std::endl;
+    wp = sp;
+    std::cout << "after  wp sp.use_count() = " << sp.use_count() << std::endl;
+  }
+  std::shared_ptr<int> sp_null = wp.lock();
+  if (!sp_null) {
+    std::cout << "shared_ptr is null" << std::endl;
+  }
+  if (wp.expired()) {
+    std::cout << "shared_ptr is destory" << std::endl;
+  } else {
+    std::cout << "shared_ptr no destory" << std::endl;
+  }
+}
+
+void weak_f4() {
+  std::cout << "========weak 4 test=======" << std::endl;
+  std::weak_ptr<int> wp;
+  std::shared_ptr<int> sp;
+  {
+    std::shared_ptr<int> sp1(new int(1));
+    std::cout << "before wp sp.use_count() = " << sp1.use_count() << std::endl;
+    wp = sp1;
+    std::cout << "after  wp sp.use_count() = " << sp1.use_count() << std::endl;
+    sp = wp.lock();
+    std::cout << "after sp sp.use_count() = " << sp1.use_count() << std::endl;
+  }
+  // std::shared_ptr<int> sp_null = wp.lock();
+  if (sp) {
+    std::cout << "shared_ptr no destory sp" << std::endl;
+  }
+  if (wp.expired()) {
+    std::cout << "shared_ptr is destory" << std::endl;
+  } else {
+    std::cout << "shared_ptr no destory" << std::endl;
+  }
+}
+
+int main() {
+  {
+    auto sp = std::make_shared<int>(42);
+    global_wp1 = sp;
+    weak_f1();
+  }
+  weak_f1();
+
+  {
+    auto sp = std::make_shared<int>(42);
+    global_wp1 = sp;
+    std::thread([&](){
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+      std::cout << "sp reset" << std::endl;
+      sp.reset();
+    }).detach();
+
+    weak_f2();
+  }
+
+  weak_f3();
+
+  weak_f4();
+  return 0;
+}
