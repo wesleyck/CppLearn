@@ -1,1 +1,0 @@
-/usr/local/gcc-11.2/bin/g++-11.2  -O0 -Wall -g -rdynamic CMakeFiles/1-2-recursive_mutex1.dir/1-2-recursive_mutex1.cpp.o -o 1-2-recursive_mutex1 

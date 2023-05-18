@@ -1,1 +1,0 @@
-/usr/local/gcc-11.2/bin/g++-11.2  -O0 -Wall -g -rdynamic CMakeFiles/5-1-exception.dir/5-1-exception.cpp.o -o 5-1-exception 

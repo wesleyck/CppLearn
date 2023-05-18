@@ -61,11 +61,7 @@ int main() {
     t = Temp();
     Temp t1, t2;
     t1 = std::move(t2);
-
   }
 
-
-
-  
   return 0;
 }

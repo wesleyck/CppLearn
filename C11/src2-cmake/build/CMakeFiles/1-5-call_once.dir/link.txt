@@ -1,1 +1,0 @@
-/usr/local/gcc-11.2/bin/g++-11.2  -O0 -Wall -g -rdynamic CMakeFiles/1-5-call_once.dir/1-5-call_once.cpp.o -o 1-5-call_once  -lpthread 
