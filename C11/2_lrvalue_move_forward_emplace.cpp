@@ -3,6 +3,7 @@
 #include <string>
 #include <string.h>
 #include <vector>
+#include "time_interval.h"
 
 
 // 1. 左右值用法
@@ -202,7 +203,6 @@ void func(T&& t) {
   // std::cout << "left  value: " << t << std::endl;
 } 
 
-
 class B {
 public:
   B() : m_data(nullptr), m_len(0) {}
@@ -210,8 +210,10 @@ public:
     m_len = size;
     m_data = new int[size];
     if (m_data) {
-      printf("B 默认构造函数 m_data: %p", m_data);
-      memcpy(m_data, data, sizeof(size * sizeof(int)));
+      printf("B 默认构造函数 m_data: %p\n", m_data);
+      // sizeof ()对于new出来的取的是指针本身的地址，而对于数组名取得是数组所有元素的所占大小
+      // printf("sizeof(arr) %lu , arr[0] size %lu\n", sizeof(data), sizeof(data[0]));
+      memcpy(m_data, data, size * sizeof(int));
     }
     
   }
@@ -219,12 +221,13 @@ public:
   B (const B& b) {
     m_len = b.m_len;
     if (b.m_data) {
-      printf("B 拷贝构造函数 m_data: %p", m_data);
+      printf("B 拷贝构造函数 m_data: %p\n", m_data);
       if (m_data) {
         delete[] m_data;
         printf("delete[] m_data\n");
       }
       m_data = new int[m_len];
+      printf("sizeof(int)*m_len: %lu\nsizeof(sizeof(int) * m_len): %lu\n", sizeof(int) * m_len, sizeof(sizeof(int) * m_len));
       memcpy(m_data, b.m_data, sizeof(sizeof(int) * m_len));
     } else {
       if (m_data) {
@@ -238,7 +241,7 @@ public:
     m_data = nullptr;
     m_len = b.m_len;
     if (b.m_data) {
-      printf("B 移动构造函数 m_data: %p", m_data);
+      printf("B 移动构造函数 m_data: %p\n", m_data);
       m_data = std::move(b.m_data); // 移动语义
       b.m_data = nullptr;
       // memcpy(m_data, b.m_data, m_len);
@@ -246,22 +249,25 @@ public:
   }
   virtual ~B() {
     if (m_data) {
-      delete m_data;
+      delete[] m_data;
       m_len = 0;
     }
   }
   void deleterptr() {
     if (m_data) {
+      std::cout << "now delete Addr: " << m_data << std::endl;
       delete[] m_data;
       m_data = nullptr;
+      m_len = 0;
     }
   }
-private:
-  int* m_data;
-  int m_len;
+
+  int* m_data = nullptr;
+  int m_len = 0;
 };
 
-int main() {
+int main4() {
+  /*
   std::cout << "====== fun(1) ======" << std::endl;
   func(5);
 
@@ -276,6 +282,163 @@ int main() {
   func(std::forward<int&>(x));
   std::cout << "====== fun(&&x) ======" << std::endl;
   func(std::forward<int&&>(x));
+  */
+
+  int arr[] = {1, 2, 3};
+  B b1(arr, sizeof(arr) / sizeof(arr[0]));
+  std::cout << "m_data in b1 Addr: 0x " << b1.m_data << std::endl;
+  B b2(b1);
+  std::cout << "m_data in b2 Addr: 0x " << b2.m_data << std::endl;
+
+  b2.deleterptr();
+  // 完美转发
+  B b3(std::forward<B>(b1));
+  // B b3(std::move(b1)); 也可以
+  std::cout << "m_data in b3 Addr: 0x" << b3.m_data << std::endl;
+  b3.deleterptr();
+
+  std::vector<int> vect{1, 2, 3, 4, 5};
+  std::cout << "before move vect size: " << vect.size() << std::endl;
+  std::vector<int> vect1 = std::move(vect);
+  std::cout << "after move vect size: " << vect.size() << std::endl;
+  std::cout << "new vect1 size: " << vect1.size() << std::endl;
+  return 0;
+}
+
+
+// 5.emplace_back string
+int main5() {
+  std::vector<std::string> v;
+  int count = 1000000;
+  v.reserve(count);
+  {
+    TIME_INTERVAL_SCOPE("push_back string :");
+    for (int i = 0; i < count; i++) {
+      std::string temp("test");
+      v.push_back(temp);
+    }
+  }
+  v.clear();
+
+  {
+    TIME_INTERVAL_SCOPE("push_back move (string):");
+    for (int i = 0; i < count; i++) {
+      std::string temp("test");
+      v.push_back(std::move(temp));
+    }
+  }
+  v.clear();
+
+  {
+    TIME_INTERVAL_SCOPE("push_back forawrd (string):");
+    for (int i = 0; i < count; i++) {
+      std::string temp("test");
+      v.push_back(std::forward<std::string>(temp));
+    }
+  }
+  v.clear();
+
+  {
+    TIME_INTERVAL_SCOPE("push_back(string):");
+    for (int i = 0; i < count; i++) {
+      v.push_back(std::string ("test"));
+    }
+  }
+  v.clear();
+
+  {
+    TIME_INTERVAL_SCOPE("push_back(string):");
+    for (int i = 0; i < count; i++) {
+      v.push_back("test");
+    }
+  }
+  v.clear();
+
+  {
+    TIME_INTERVAL_SCOPE("emplace_back(string):");
+    for (int i = 0; i < count; i++) {
+      v.emplace_back("test"); // 一次构造，不调用拷贝构造函数
+    }
+  }
+  return 0;
+}
+
+
+class Foo {
+public:
+  Foo(std::string name) : m_name(name) {
+    std::cout << "Default construction" << std::endl;
+  }
+  Foo(const Foo& foo) {
+    std::cout << "Copy construction" << std::endl;
+    m_name = foo.m_name;
+  }
+  Foo(Foo&& foo) {
+    std::cout << "Move copy construction" << std::endl;
+    m_name = std::move(foo.m_name);
+  }
+  ~Foo() {
+    std::cout << "Default destruction" << std::endl;
+  }
+private:
+  std::string m_name;
+};
+// 6.emplace_back T
+int main() {
+
+  std::vector<Foo> v;
+  int count = 100000;
+  v.reserve(count);
+  {
+      TIME_INTERVAL_SCOPE("push_back T:");
+      Foo temp("test");
+      v.push_back(temp);// push_back(const T&)，参数是左值引用
+      //打印结果：
+      //constructor
+      //copy constructor
+  }
+  std::cout << " ---------------------\n" << std::endl;
+  v.clear();
+  {
+      TIME_INTERVAL_SCOPE("push_back move(T):");
+      Foo temp("test");
+      v.push_back(std::move(temp));// push_back(T &&), 参数是右值引用
+      //打印结果：
+      //constructor
+      //move constructor
+  }
+  std::cout << " ---------------------\n" << std::endl;
+  v.clear();
+  {
+      TIME_INTERVAL_SCOPE("push_back(T&&):");
+      v.push_back(Foo("test"));// push_back(T &&), 参数是右值引用
+      //打印结果：
+      //constructor
+      //move constructor
+  }
+  std::cout << " ---------------------\n" << std::endl;
+  v.clear();
+  {
+      std::string temp = "test";
+      TIME_INTERVAL_SCOPE("push_back(string):");
+      v.push_back(temp);// push_back(T &&), 参数是右值引用
+      //打印结果：
+      //constructor
+      //move constructor
+  }
+  std::cout << " ---------------------\n" << std::endl;
+  v.clear();
+  {
+      // std::string temp = "test";
+      TIME_INTERVAL_SCOPE("emplace_back(T):");
+      // Foo temp("test");
+      // v.emplace_back(temp);// 只有一次构造函数，不调用拷贝构造函数，速度最快
+      //打印结果：
+      //constructor
+      v.emplace_back(Foo("test"));
+  }
+
+
 
   return 0;
 }

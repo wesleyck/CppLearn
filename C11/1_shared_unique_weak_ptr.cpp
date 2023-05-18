@@ -7,6 +7,8 @@
 #include <string>
 #include <string.h>
 
+// thread 需要引入库，make_unique 需要c14  -lpthread -std=c++14
+
 // error example
 // 1.shared_ptr不能两次使用裸指针初始化,只能一次，否则double free
 int main1() {
