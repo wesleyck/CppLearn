@@ -1,4 +1,7 @@
 #include <string>
+#include <iostream>
+
+using namespace std;
 
 class Context {
 public:
@@ -7,14 +10,16 @@ public:
 };
 
 // 稳定点 抽象  变化点 扩展 （多态）
-//  从单个处理节点出发，我能处理，我处理，我不能处理交给下一个人处理
-//  链表关系如何抽象
+// 从单个处理节点出发，我能处理，我处理，我不能处理交给下一个人处理
+// 链表关系如何抽象
 
 class IHandler {
 public:
-    virtual ~IHandler() : next(nullptr) {}
+    virtual ~IHandler() {
+        next=nullptr;
+        }
     void SetNextHandler(IHandler *next) { // 链表关系
-        next = next;
+        this->next = next;
     }
     bool Handle(const Context &ctx) {
         if (CanHandle(ctx)) {
@@ -35,11 +40,16 @@ public:
         h0->SetNextHandler(h1);
         h1->SetNextHandler(h2);
         h2->SetNextHandler(h3);
-        return h0->Handle(ctx);
+        bool result = h0->Handle(ctx);
+        delete h0;
+        delete h1;
+        delete h2;
+        delete h3;
+        return result;
     }
 protected:
-    virtual bool HandleRequest(const Context &ctx) {return true};
-    virtual bool CanHandle(const Context &ctx) {return true};
+    virtual bool HandleRequest(const Context &ctx) {return true;}
+    virtual bool CanHandle(const Context &ctx) {return true;}
     IHandler * GetNextHandler() {
         return next;
     }
@@ -113,7 +123,7 @@ int main() {
 // nginx http 处理 
     // 设置下一指针 
     Context ctx;
-    if (IHander::handler_leavereq(ctx)) {
+    if (IHandler::handler_leavereq(ctx)) {
         cout << "请假成功";
     } else {
         cout << "请假失败";
@@ -121,3 +131,34 @@ int main() {
     
     return 0;
 }
+
+
+#if 0
+class LeaveRequest {
+public:
+    bool HandleRequest(const Context &ctx) {
+        if (ctx.day <= 1)
+            HandleByBeaty(ctx);
+        if (ctx.day <= 1)
+            HandleByMainProgram(ctx);
+        else if (ctx.day <= 10)
+            HandleByProjMgr(ctx);
+        else
+            HandleByBoss(ctx);
+    }
+
+private:
+    bool HandleByBeaty(const Context &ctx) {
+        
+    }
+    bool HandleByMainProgram(const Context &ctx) {
+        
+    }
+    bool HandleByProjMgr(const Context &ctx) {
+        
+    }
+    bool HandleByBoss(const Context &ctx) {
+
+    }
+};
+#endif

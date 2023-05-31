@@ -1,3 +1,8 @@
+#include <list>
+#include <iostream>
+
+using namespace std;
+
 class IComponent
 {
 public:
@@ -29,7 +34,7 @@ public:
     }
     virtual void Execute() {
         for (auto iter = _list.begin(); iter != _list.end(); iter++) {
-            iter->Execute();
+            (*iter)->Execute();
         }
     }
 };

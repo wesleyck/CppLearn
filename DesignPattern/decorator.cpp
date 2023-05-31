@@ -76,3 +76,47 @@ int main() {
     CalcBonus *cb3 = new CalcGroupBonus(cb1);
     cb3->Calc(ctx2);
 }
+
+
+#if 0
+class Context {
+public:
+    bool isMgr;
+    // User user;
+    // double groupsale;
+};
+
+class Bonus {
+public:
+    double CalcBonus(Context &ctx) {
+        double bonus = 0.0;
+        bonus += CalcMonthBonus(ctx);
+        bonus += CalcSumBonus(ctx);
+        if (ctx.isMgr) {
+            bonus += CalcGroupBonus(ctx);
+        }
+        return bonus;
+    }
+private:
+    double CalcMonthBonus(Context &ctx) {
+        double bonus/* = */;
+        return bonus;
+    }
+    double CalcSumBonus(Context &ctx) {
+        double bonus/* = */;
+        return bonus;
+    }
+    double CalcGroupBonus(Context &ctx) {
+        double bonus/* = */;
+        return bonus;
+    }
+};
+
+int main() {
+    Context ctx;
+    // 设置 ctx
+    Bonus *bonus = new Bonus;
+    bonus->CalcBonus(ctx);
+}
+
+#endif
