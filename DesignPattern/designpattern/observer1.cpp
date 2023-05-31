@@ -1,4 +1,7 @@
 
+// 耦合太紧密，需要修改类结构才能拓展，极其不方便
+#if 1
+
 class DisplayA {
 public:
     void Show(float temperature);
@@ -12,7 +15,7 @@ public:
 class DisplayC {
 public:
     void Show(float temperature);
-}
+};
 
 class WeatherData {
 };
@@ -45,3 +48,5 @@ int main() {
     center->TempNotify();
     return 0;
 }
+
+#endif
